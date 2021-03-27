@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(qguitarfuzz LANGUAGES CXX)
+project(guitar-effects LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -34,19 +34,19 @@ set(PROJECT_SOURCES
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(qguitarfuzz
+    qt_add_executable(guitar-effects
         ${PROJECT_SOURCES}
     )
 else()
     if(ANDROID)
-        add_library(qguitarfuzz SHARED
+        add_library(guitar-effects SHARED
             ${PROJECT_SOURCES}
         )
     else()
-        add_executable(qguitarfuzz
+        add_executable(guitar-effects
             ${PROJECT_SOURCES}
         )
     endif()
 endif()
 
-target_link_libraries(qguitarfuzz PRIVATE Qt${QT_VERSION_MAJOR}::Widgets pulse-simple pulse)
+target_link_libraries(guitar-effects PRIVATE Qt${QT_VERSION_MAJOR}::Widgets pulse-simple pulse)
