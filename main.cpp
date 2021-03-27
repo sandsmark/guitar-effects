@@ -13,7 +13,8 @@ extern "C" {
 
 #define SAMPLERATE		44100
 #define NROFCHANNELS		1
-#define FRAMESPERBUFFER 64
+#define BUFFER_SIZE 64 // TODO value chosen a bit at random
+
 
 // From https://github.com/PortAudio/portaudio/blob/master/examples/pa_fuzz.c
 struct Fuzz {
@@ -82,7 +83,7 @@ struct Delay {
     int bypass = 1;
 
     void process_samples(float *inputbuffer) {
-        for(int bufptr=0; bufptr<FRAMESPERBUFFER; bufptr++) {
+        for(int bufptr=0; bufptr<BUFFER_SIZE; bufptr++) {
 
             if(input >= DELAYBUFFERSIZE){
                 input = 0;
@@ -118,7 +119,7 @@ int main(int argc, char *argv[])
     signal(SIGINT, &sigintHandler);
     signal(SIGTERM, &sigintHandler);
 
-    float buffer[FRAMESPERBUFFER];
+    float buffer[BUFFER_SIZE];
 
     pa_sample_spec inType;
     inType.format = PA_SAMPLE_FLOAT32LE;
@@ -127,16 +128,14 @@ int main(int argc, char *argv[])
 
     // TODO: figure out what the optimal is for latency, ignoring CPU usage
     pa_buffer_attr buffering;
-    buffering.fragsize = uint32_t(-1);
-//    buffering.fragsize = 10;
     buffering.maxlength = uint32_t(-1);
-//    buffering.maxlength = FRAMESPERBUFFER;
-//    buffering.prebuf = uint32_t(-1);
-    buffering.prebuf = 0; // "free-wheel" mode for pulseaudio
-//    buffering.tlength = uint32_t(-1);
-    buffering.tlength = FRAMESPERBUFFER;
-    buffering.minreq = buffering.tlength / 2;
+    buffering.prebuf = uint32_t(-1);
     buffering.minreq = uint32_t(-1);
+    buffering.fragsize = uint32_t(-1);
+    buffering.tlength = uint32_t(-1);
+
+    buffering.tlength = BUFFER_SIZE * 2; // output: let the server buffer at least one chunk ahead, should keep latency down while avoiding underruns
+    buffering.fragsize = BUFFER_SIZE; // input: hand us one chunk at the time
 
     int error = 0;
     pa_simple *input = pa_simple_new(nullptr, "qguitarfuzz", PA_STREAM_RECORD, nullptr, "input", &inType, nullptr, &buffering, &error);
@@ -178,9 +177,9 @@ int main(int argc, char *argv[])
         }
 
         if (distort) {
-            for(int i=0; i<FRAMESPERBUFFER; i++) buffer[i] = dist.distort(buffer[i]);
+            for(int i=0; i<BUFFER_SIZE; i++) buffer[i] = dist.distort(buffer[i]);
         } else {
-            for(int i=0; i<FRAMESPERBUFFER; i++) buffer[i] = fuzz.fuzz(buffer[i]);
+            for(int i=0; i<BUFFER_SIZE; i++) buffer[i] = fuzz.fuzz(buffer[i]);
         }
 
         ret = pa_simple_write(output, buffer, sizeof buffer, &error);
