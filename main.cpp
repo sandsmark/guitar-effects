@@ -11,6 +11,10 @@ extern "C" {
 #include <math.h>
 }
 
+#define SAMPLERATE		44100
+#define NROFCHANNELS		1
+#define FRAMESPERBUFFER 64
+
 // From https://github.com/PortAudio/portaudio/blob/master/examples/pa_fuzz.c
 struct Fuzz {
     /* Non-linear amplifier with soft distortion curve. */
@@ -53,6 +57,51 @@ private:
     float depth = 1.f;
 };
 
+// from https://github.com/marcoalkema/cpp-guitar_effects/blob/master/ringModulator.cpp
+struct RingModulator {
+    float Fc = 440;
+    float Fs = 300;
+    float mod_phase = 0;
+
+    inline float modulate(float input) {
+        input= 0.005 * input* (1 + Fs*sin(mod_phase) );
+        mod_phase+=Fc*2*M_PI/SAMPLERATE;
+        return input;
+    }
+};
+
+// from https://github.com/marcoalkema/cpp-guitar_effects/blob/master/delay.cpp
+#define DELAYBUFFERSIZE 44100
+struct Delay {
+
+    float delayBuffer[DELAYBUFFERSIZE];
+    int delayTime = 5000;
+    int input = 0;
+    int output = 0;
+    float feedback = 0.5;
+    int bypass = 1;
+
+    void process_samples(float *inputbuffer) {
+        for(int bufptr=0; bufptr<FRAMESPERBUFFER; bufptr++) {
+
+            if(input >= DELAYBUFFERSIZE){
+                input = 0;
+            }
+
+            output = input - delayTime;
+
+            if(output < 0){
+                output = output + DELAYBUFFERSIZE;
+            }
+
+            delayBuffer[input] = inputbuffer[bufptr] + (delayBuffer[output] * feedback);
+            inputbuffer[bufptr] = cos(delayBuffer[input] + 0.5) ;
+
+            input++;
+        }//for
+    }
+};
+
 static bool s_running;
 void sigintHandler(int sig) {
     signal(sig, SIG_DFL);
@@ -60,7 +109,6 @@ void sigintHandler(int sig) {
 }
 
 
-#define FRAMESPERBUFFER 64
 int main(int argc, char *argv[])
 {
     (void)argc;
@@ -74,8 +122,8 @@ int main(int argc, char *argv[])
 
     pa_sample_spec inType;
     inType.format = PA_SAMPLE_FLOAT32LE;
-    inType.channels = 1;
-    inType.rate = 44100;
+    inType.channels = NROFCHANNELS;
+    inType.rate = SAMPLERATE;
 
     // TODO: figure out what the optimal is for latency, ignoring CPU usage
     pa_buffer_attr buffering;
@@ -83,10 +131,12 @@ int main(int argc, char *argv[])
 //    buffering.fragsize = 10;
     buffering.maxlength = uint32_t(-1);
 //    buffering.maxlength = FRAMESPERBUFFER;
-    buffering.minreq = uint32_t(-1);
-    buffering.prebuf = uint32_t(-1);
+//    buffering.prebuf = uint32_t(-1);
+    buffering.prebuf = 0; // "free-wheel" mode for pulseaudio
 //    buffering.tlength = uint32_t(-1);
     buffering.tlength = FRAMESPERBUFFER;
+    buffering.minreq = buffering.tlength / 2;
+    buffering.minreq = uint32_t(-1);
 
     int error = 0;
     pa_simple *input = pa_simple_new(nullptr, "qguitarfuzz", PA_STREAM_RECORD, nullptr, "input", &inType, nullptr, &buffering, &error);
@@ -145,6 +195,8 @@ int main(int argc, char *argv[])
         }
     }
     puts("");
+    pa_simple_free(output);
+    pa_simple_free(input);
     return 0;
 //    QApplication a(argc, argv);
 //    MainWindow w;
