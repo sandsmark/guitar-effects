@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
     // TODO: figure out what the optimal is for latency, ignoring CPU usage
     pa_buffer_attr buffering;
     buffering.maxlength = uint32_t(-1);
-    buffering.prebuf = uint32_t(-1);
+    buffering.prebuf = 1;//uint32_t(-1);
     buffering.minreq = uint32_t(-1);
     buffering.fragsize = uint32_t(-1);
     buffering.tlength = uint32_t(-1);

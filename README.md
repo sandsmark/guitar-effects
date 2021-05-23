@@ -6,10 +6,24 @@ Guitar Thing Without Any Name
 jack is a pain to get to work while letting pulseaudio work, and jack +
 guitarix has horrible latency for some reason.
 
-So this is a very simple guitar effect thing using pulseaudio.
+So this is a very simple guitar effect thing using pulseaudio, which has less
+than 1ms latency on my machine.
 
-Run it with either just `guitar-effects distortion` or `guitar-effects fuzz` to
-select one of two distortion effects. Then use something like
+
+Warning
+-------
+Don't use it with Pipewire, Pipewire kind of dies.
+
+Use Guitarix instead if you have Pipewire,
+
+
+Usage
+-----
+
+Run `guitar-effects --help` to see what effects are available and how to
+specify which ou want.
+
+Then use something like
 [pavucontrol](https://github.com/sandsmark/pavucontrol-qt) to select the
 correct input and output for it.
 
