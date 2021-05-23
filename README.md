@@ -26,7 +26,6 @@ TODO
 ----
 
  - Create GUI
-  - Expose the rest of the effects
   - Allow changing parameters
   - Allow changing pulseaudio connection parameters (latency vs. buffer underruns).
  - Switch from simple pulseaudio API to the threaded API.
